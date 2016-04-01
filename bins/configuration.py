@@ -1,0 +1,9 @@
+PORTS	 = ['/dev/ttyUSB0','/dev/ttyUSB1','/dev/ttyUSB2','/dev/ttyUSB3']
+TIMEOUT  = 3
+BAUDRATE = 460800
+PARITY   = "N"
+STOPBITS = 1
+BYTESIZE = 8
+
+SYNCHRO  = b'\xAA'
+MAX_PACKET_LENGTH = 100

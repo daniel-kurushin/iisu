@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+	<script src="static/jquery-1.11.2.min.js"></script>
+	<script src="static/power.js"></script>
+	<link rel="stylesheet" type="text/css" href="static/base.css"></head>
+<body>
+	<header>Интеллектуальная система управления МИСМП</header>
+	<article>
+		<section>
+			<h1>Основная телеметрия</h1>
+			<p>U<sub>12</sub>:<span id="U_12"></span>В</p>
+			<p>Lat:<span id="Lat"></span>рад</p>
+			<p>Lon:<span id="Lon"></span>рад</p>
+			<p>Spd:<span id="Spd"></span>м/с</p>
+		</section>
+		<section>
+			<h1>Обзор местности</h1>
+			<iframe style="width:900px; height: 680px" src="http://192.168.0.198:8000/"></iframe>
+		</section>
+		<section>
+			<h1>Геоинформационная система</h1>
+			<iframe style="width:900px; height: 680px" ></iframe>
+		</section>
+	 </article>
+</body>

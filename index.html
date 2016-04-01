@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title>Диагностика и управление БИУ</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+	<script src="static/jquery-1.11.2.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="static/base.css"></head>
+<body>
+	<header>
+		<menu>
+			<item onclick="showPanel('#diagnose');"  
+				  class="diagnose" >Диагностика</item>
+			<item onclick="showPanel('#controls');" 
+				  class="controls" >Управление</item>
+		</menu>
+	</header>
+	<article>
+		<section>
+			<h1>БИУ1</h1>
+			<input name=a value=b />
+		</section>
+	</article>
+</body>
+</html>
+
+
+
+
+<!-- <head>
+	<meta charset="utf-8">
+	<title>Система техзрения</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+	<script src="static/jquery-1.11.2.min.js"></script>
+	<script src="static/recognize.js"></script>
+	<script src="static/navigation.js"></script>
+	<script src="static/movement.js"></script>
+	<script type="text/javascript">
+
+	function showPanel(name) {
+		$('#recognize').hide();
+		$('#navigation').hide();
+		$('#movement').hide();
+		$(name).show();
+	}
+
+	$(document).ready(function(){
+		ctx_map  = document.getElementById("map_canvas").getContext("2d");
+		ctx_mov = document.getElementById("move_canvas").getContext("2d");
+		$.get('/describe', {}, function(data) {
+			console.log(data);
+			$('#camera').attr('src',data.cameras.left.picture);
+			})
+		//updImage();
+		showPanel('#movement');
+		map_redraw();
+		move_redraw(1);
+		}
+	);
+	</script>
+	<link rel="stylesheet" type="text/css" href="static/base.css">
+</head>
+<body>
+	<header>
+		<menu>
+			<item onclick="showPanel('#recognize');"  
+				  class="recognize"  >Распознавание</item>
+			<item onclick="showPanel('#navigation');" 
+				  class="navigation" >Ориентирование</item>
+			<item onclick="showPanel('#movement');"   
+				  class="movement"   >Движение</item>
+		</menu>
+	</header>
+	<article id="recognize">
+	<h1>Распознавание объектов</h1>
+	<section>
+	<div class="panel one">
+		<button onclick="setB(+20);">+20</button>
+		<button onclick="setB(+10);">+10</button>
+		<button onclick="setB(+00);">  0</button>
+		<button onclick="setB(-10);">-10</button>
+		<button onclick="setB(-20);">-20</button>
+	</div>
+	<img id="camera" src="">
+	<div class="panel three">
+		<button onclick="updImage();"   >обновить</button>
+		<button onclick="recognize();"  >распознать</button>
+		<pre class="result"></pre>
+	</div>
+	<div class="panel two">
+		<button onclick="setA(+150);">+150</button>
+		<button onclick="setA(+125);">+125</button>
+		<button onclick="setA(+100);">+100</button>
+		<button onclick="setA( +75);"> +75</button>
+		<button onclick="setA( +50);"> +50</button>
+		<button onclick="setA( +25);"> +25</button>
+		<button onclick="setA( +00);">   0</button>
+		<button onclick="setA( -25);"> -25</button>
+		<button onclick="setA( -50);"> -50</button>
+		<button onclick="setA( -75);"> -75</button>
+		<button onclick="setA(-100);">-100</button>
+		<button onclick="setA(-125);">-125</button>
+		<button onclick="setA(-150);">-150</button>
+	</div>
+	</section>
+	</article>
+	<article id="navigation">
+	<h1>Ориентирование на местности</h1>
+	<section>
+		<div id="map">
+			<canvas id="map_canvas" width="640" height="480"></canvas>
+		</div>
+		<div>
+			<button onclick="map_redraw();" >Перерисовать</button>
+			<button onclick="map_scan();"   >Сканировать</button>
+		</div>
+	</section>
+	</article>
+	<article id="movement">
+	<h1>Автономное движение</h1>
+	<section>
+		<div id="move">
+			<canvas id="move_canvas" width="640" height="480"></canvas>
+		</div>
+		<div>
+			<button onclick="move_redraw();"    >Перерисовать</button>
+			<button onclick="move_get_coords();">Привязка</button>
+			<button onclick="move_go();"        >Движение</button>
+			<!-- <hr/>
+			<button onclick="move_scale_down();">−</button>
+			<button onclick="move_scale_up();"  >+</button> -->
+		</div>
+	</section>
+	</article>
+
+</body>
+</html>
+
+ -->

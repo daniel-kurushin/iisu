@@ -1,0 +1,104 @@
+* {
+    user-select:none;
+    -webkit-user-select:none;
+}
+
+header, menu {
+    padding: 0px;
+}
+
+item {
+    width: 15%;
+    display: inline-block;
+    min-width: fit-content;
+    min-width: -moz-fit-content;
+    text-align: center;
+    cursor: pointer;
+}
+
+item.recognize {
+    background-color: #f99;
+}
+
+item.navigation {
+    background-color: #afffaf;
+}
+
+item.movement {
+    background-color: #a6a6ff;
+}
+
+#camera {
+    width: 640px;
+    height: 480px;
+    float: left;
+}
+
+.one {
+    float: left;
+    width: 50px;
+    min-height: 480px;
+}
+
+.one button {
+    width: 95%;
+}
+
+.two {
+    margin-left: 50px;
+    display: -moz-grid-group;
+    display: grid-group;
+}
+
+.two button {
+    width: 7%;
+}
+
+.three {
+    float: left;
+    min-height: 480px;
+}
+
+.three button {
+    width: 95%;
+}
+
+
+/* navigation */
+
+
+#navigation section div:nth-child(1) {
+    width: 640px;
+    height: 480px;
+    float: left;
+}
+
+#navigation section div:nth-child(2) {
+    float: left;
+    max-width: 150px;
+    min-height: 480px;
+}
+
+#navigation button {
+    width: 95%;
+}
+
+/* movement */
+
+
+#movement section div:nth-child(1) {
+    width: 640px;
+    height: 480px;
+    float: left;
+}
+
+#movement section div:nth-child(2) {
+    float: left;
+    max-width: 150px;
+    min-height: 480px;
+}
+
+#movement button {
+    width: 95%;
+}
+

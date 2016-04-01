@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+	<script src="static/jquery-1.11.2.min.js"></script>
+	<script src="static/power.js"></script>
+	<link rel="stylesheet" type="text/css" href="static/base.css"></head>
+<body>
+	<header>Диагностика и управление питанием МИСМП</header>
+	<article>
+		<section>
+			<h1>Шина 12В</h1>
+			<p>Напряжение:<span id="U_12"></span>В</p>
+			<p       >Ток:<span id="I_12"></span>А</p>
+		</section>
+		<section>
+			<h1>Шина 48В</h1>
+			<p       >Ток:<span id="I_48"></span>А</p>
+			<button onclick="measure();" >Обновить</button>
+			<button onclick="do48vOFF();">Выключить</button>
+			<button onclick="do48vON();" >Включить</button>
+		</sectiN>
+	 </article>
+</body>
