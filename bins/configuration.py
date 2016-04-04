@@ -6,16 +6,16 @@ STOPBITS = 1
 BYTESIZE = 8
 
 SYNCHRO  = b'\xAA'
-MAX_PACKET_LENGTH = 100
+MAX_PACKET_LENGTH = 1000
 
-packets_out = dict(
-	p40h = {
-		'Type':		[ 1,'>b',1,None],
-		'PkID':		[ 2,'>b',1,None],
-		'Freq':		[ 3,'>f',1,None],
+packets_out = {
+	0x40: {
+		# 'Type':		[ 1,'>b',1,None],
+		'PkID':		[ 1,'>B',1,None],
+		'Freq':		[ 2,'<I',1,None],
 	},
 
-	p45h = {
+	0x45: {
 		'Lat_0':	[ 1,'>i',10 ** 8,None],
 		'Lon_0':	[ 2,'>i',10 ** 8,None],
 		'H_0':		[ 3,'>i',1,None],
@@ -28,14 +28,18 @@ packets_out = dict(
 			}],
 	},
 
-	p4Fh = {
+	0x4F: {
 		'LFT_WHL':	[ 1,'>f',1,None],
 		'RGT_WHL':	[ 2,'>f',1,None],
 		'A_optical':[ 3,'>f',1,None],
 		'SKO_A':	[ 4,'>f',1,None]
 	},
 
-	p53h = {
+	0x4D: {
+		'DRIFT_v':	[ 1,'>f',1,None],
+	},
+
+	0x53: {
 		'K_odm':	[ 1,'>f',1,None],
 		'Psi':		[ 2,'>f',1,None],
 		'Tetta':	[ 3,'>f',1,None],
@@ -46,9 +50,10 @@ packets_out = dict(
 		'R2':		[ 8,'>f',1,None],
 		'R3':		[ 9,'>f',1,None],
 	}
-)
-packets_in = dict(
-	p33h = {
+}
+
+packets_in = {
+	0x33: {
 		'V_e':		( 1,'<f',1),
 		'V_n':		( 2,'<f',1),
 		'V_h':		( 3,'<f',1),
@@ -62,14 +67,14 @@ packets_in = dict(
 		'fRMS':		(11,'<f',1),
 		'fGGA':		(12,'<f',1),
 		'fGSA':		(13,'<f',1),
-		'Lat_sns':	(14,'<i',1 / 10 ** 8),
-		'Lon_sns':	(15,'<i',1 / 10 ** 8),
+		'Lat_sns':	(14,'<I',1 / 10 ** 8),
+		'Lon_sns':	(15,'<I',1 / 10 ** 8),
 		'R1':		(16,'<f',1),
 		'R2':		(17,'<f',1),
 		'R3':		(18,'<f',1),
 	},
 
-	p35h = {
+	0x35: {
 		'S_full':	( 1,'<f',1),
 		'V_g':	( 2,'<f',1),
 		'Ve':		( 3,'<f',1),
@@ -89,8 +94,30 @@ packets_in = dict(
 		'K_odm_calc':(17,'<f',1),
 	},
 
-	p70h = {
-		'state':	( 1,'<i',1),
+	0x70: {
+		'state':	( 1,'<I',1,
+			{
+				 0:'ins_ok',
+				 1:'sns_ok',
+				 2:'mk_ok',
+				 3:'bv_ok',
+				 4:'sns_good',
+				 5:'dvs_good',
+				 6:'obj_move',
+				 7:'stb_crr',
+				 8:'sns_crr',
+				 9:'lat_crr',
+				10:'cur_lat_crr',
+				11:'zav_crr',
+				12:'r0',
+				13:'dbl_hyr',
+				14:'dbl_hyr_rpt',
+				15:'ready',
+				16:'avt_md',
+				17:'acc_crr',
+				18:'odo_crr',
+			},
+		),
 		'A_x':		( 2,'<f',1),
 		'A_y':		( 3,'<f',1),
 		'A_z':		( 4,'<f',1),
@@ -100,17 +127,32 @@ packets_in = dict(
 		'C_bins':	( 8,'<f',1),
 		'A_bins':	( 9,'<f',1),
 		'B_bins':	(10,'<f',1),
-		'Lat_bins':	(11,'<i',1 / 10 ** 8),
-		'Lon_bins':	(12,'<i',1 / 10 ** 8),
+		'Lat_bins':	(11,'<I',1 / 10 ** 8),
+		'Lon_bins':	(12,'<I',1 / 10 ** 8),
 		'H_bins':	(13,'<f',1),
 	},
 
-	p8Eh = {
+	0x72: {
+		'A_bins':	( 1,'<f',1),
+		'C_bins':	( 2,'<f',1),
+		'B_bins':	( 3,'<f',1),
+		'V_e':		( 4,'<f',1),
+		'V_n':		( 5,'<f',1),
+		'V_h':		( 6,'<f',1),
+		'X_bins':	( 7,'<f',1),
+		'Y_bins':	( 8,'<f',1),
+		'Z_bins':	( 9,'<f',1),
+		'A_bins':	(10,'<f',1),
+		'C_bins':	(11,'<f',1),
+		'B_bins':	(12,'<f',1),
+	},
+
+	0x8E: {
 		'P': 		( 1,'<f',1),
 		'T': 		( 2,'<f',1),
 	},
 
-	pDEh = {
+	0xDE: {
 		'X_bins':	( 1,'<f', 1),
 		'Y_bins':	( 2,'<f', 1),
 		'Z_bins':	( 3,'<f', 1),
@@ -121,4 +163,4 @@ packets_in = dict(
 		'dY':		( 8,'<f', 1),
 		'dZ':		( 9,'<f', 1),
 	},
-)
+}

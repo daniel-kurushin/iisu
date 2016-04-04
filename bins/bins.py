@@ -7,7 +7,7 @@ from struct import pack, unpack
 from serial import Serial, SerialException
 from threading import Thread
 from time import sleep
-
+from crc import compute_crc
 
 
 try:
@@ -27,6 +27,19 @@ D35 = dict(
 
 D70 = dict(
 	signature = (b'\x37', b'\x70'),
+	state = 0,
+)
+
+D72 = dict(
+	signature = (b'\x33', b'\x72'),
+)
+
+D8E = dict(
+	signature = (b'\x0b', b'\x8e'),
+)
+
+DDE = dict(
+	signature = (b'\x27', b'\xde'),
 )
 
 class BINS(Serial):
@@ -48,30 +61,12 @@ class BINS(Serial):
 		return self.read(), self.read()
 
 
-	def ask_packet_new(self, bins_serial = None, packet_id = 0x70, packet_frequency = 100, type_of_protocol = None):
-		if not 0 <= packet_id <= 255:
-			raise Exception() #!!!!!
-
-		if not 0 <= packet_frequency <= 1000:
-			raise Exception() #!!!!!
-
-
-		request  = b"\x40"
-		if type_of_protocol != None:
-			request += type_of_protocol.to_bytes(length = 1, byteorder = "little")
-
-		request += packet_id.to_bytes(length = 1, byteorder = "little")
-		request += \
-			(packet_frequency // 10).to_bytes(
-				length    = 4,
-				byteorder = "little",
-			)
-		crc = compute_crc(request)
-
-		request  = b"\xAA\xAA\x09" + request
-		request += crc.to_bytes(length = 2, byteorder = "little")
-
-		bins_serial.write(request)
+	def ask_packet(self, packet_id = 0x70, packet_frequency = 10):
+		x = configuration.packets_out[0x40]
+		x['PkID'][3] = packet_id 
+		x['Freq'][3] = packet_frequency // 10
+		x = self.send_packet(0x40,self.make_packet(x))
+		print(x)
 
 
 
@@ -79,7 +74,7 @@ class BINS(Serial):
 		for p in configuration.PORTS:
 			try:
 				print('Trying port %s ... ' % p, end = '', file = sys.stderr)
-				s = Serial(port = p, baudrate = configuration.BAUDRATE, timeout = 0.1)
+				s = Serial(port = p, baudrate = configuration.BAUDRATE, timeout = 0.5)
 				n = 0
 				while 1:
 					if s.read() == configuration.SYNCHRO:
@@ -87,7 +82,7 @@ class BINS(Serial):
 							print('success!', file = sys.stderr)
 							return p
 					elif s.read() == b'':
-						raise SerialException('Wrong data on port %s' % p)
+						raise SerialException('Empty data on port %s' % p)
 					else: n += 1
 					if n > configuration.MAX_PACKET_LENGTH:
 						raise SerialException('Wrong data on port %s' % p)
@@ -109,24 +104,18 @@ class BINS(Serial):
 		# return #!!!!!
 		if not 0 <= packet_id <= 255:
 			raise Exception() #!!!!!
-			
+		
+		to_send = \
+			pack('>b', packet_id) + \
+			b''.join(data)
 
-		len_pack = len(data)*4 + 3
-
-		request = packet_id.to_bytes(length = 1, byteorder = "little")
-
-		for elem in data:
-			if type(elem) == float:
-				request += \
-					struct.pack('<f', elem)
-			elif type(elem) == int:
-				request += \
-					struct.pack('<i', elem)
-			else:
-				pass
-
-		crc = compute_crc(request)
-		request  = b"\xAA\xAA" + len_pack.to_bytes(length = 1, byteorder = "little") + request + crc.to_bytes(length = 2, byteorder = "little")
+		crc = compute_crc(to_send)
+		to_send = \
+			configuration.SYNCHRO + \
+			configuration.SYNCHRO + \
+			pack('>B', (len(to_send) + 2)) + \
+			to_send + \
+			pack('<H', crc)
 
 		# "\x64\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 			# AA AA 17 45 40 A3 08 06 CD C3 D9 05 B4 00 00 00 64 00 00 00 05 00 00 00 F5 8D
@@ -134,13 +123,13 @@ class BINS(Serial):
 		#     aa  aa  08
 		# aa aa 07 4d 00 00 00 00 12 30
 		# AA AA 07 4D 00 00 61 45 68 10
-		print(''.join(["%02x " % x for x in request]))
+		# aa aa 06 40 01 01 3f 80 00 00 f1 40 
+		print(''.join(["%02x " % x for x in to_send]), file = sys.stderr)
+		return self.write(to_send)
 
-		BINSport.write(request)
 
 	def make_packet(self, packet_data = {}):
 		ordered = [0] * len(packet_data.keys())
-		print(ordered)
 		for key, val in packet_data.items():
 			n = val[0] - 1
 			F = val[1]
@@ -151,14 +140,37 @@ class BINS(Serial):
 		return ordered
 	
 	def parse_packet(self, packet_id, packet_bytes):
+		def parse_state(to_parse, dict_to_fill):
+			_ = unpack('<I', to_parse)[0]
+			out = {}
+			for n in range(len(dict_to_fill)):
+				out.update({dict_to_fill[n]: _ & 1})
+				n += 1
+				_ = _ >> 1
+
+			# some BINS magic!
+			out['ins_ok'] = not out['ins_ok']
+			out['sns_ok'] = not out['sns_ok']
+			out['mk_ok'] = not out['mk_ok']
+			out['dvs_good'] = not out['dvs_good']
+			out['bv_ok'] = not out['bv_ok']
+			out['obj_move'] = not out['obj_move']
+			out['dbl_hyr'] = not out['dbl_hyr']
+			out['dbl_hyr_rpt'] = not out['dbl_hyr_rpt']
+			out['acc_crr'] = not out['acc_crr']
+			out['odo_crr'] = not out['odo_crr']
+			return out
+
 		data = {}
 		for key, val in configuration.packets_in[packet_id].items():
 			F = val[1]
 			L = len(pack(F,0))
 			d0, d1 = (val[0] - 1) * L, (val[0] - 1) * L + L
 			K = val[2]
-			data[key] = unpack(F, packet_bytes[d0:d1])[0] * K
-		
+			if packet_id == 0x70 and key == 'state':
+				data[key] = parse_state(packet_bytes[d0:d1], val[3])
+			else:
+				data[key] = unpack(F, packet_bytes[d0:d1])[0] * K
 		return data
 
 	def read_packets(self):
@@ -171,11 +183,17 @@ class BINS(Serial):
 			if self.read_synchro():
 				pln, sig = self.read_signature()
 				if (pln, sig) == D70['signature']: 
-					D70.update(self.parse_packet('p70h',self.read(ord(pln))))
+					D70.update(self.parse_packet(0x70,self.read(ord(pln))))
+				if (pln, sig) == D72['signature']: 
+					D72.update(self.parse_packet(0x72,self.read(ord(pln))))
 				elif (pln, sig) == D33['signature']: 
-					D33.update(self.parse_packet('p33h',self.read(ord(pln))))
+					D33.update(self.parse_packet(0x33,self.read(ord(pln))))
 				elif (pln, sig) == D35['signature']: 
-					D35.update(self.parse_packet('p35h',self.read(ord(pln))))
+					D35.update(self.parse_packet(0x35,self.read(ord(pln))))
+				elif (pln, sig) == D8E['signature']: 
+					D35.update(self.parse_packet(0x8E,self.read(ord(pln))))
+				elif (pln, sig) == DDE['signature']: 
+					D35.update(self.parse_packet(0xDE,self.read(ord(pln))))
 				elif sig == 0:
 					self.state
 
@@ -201,23 +219,26 @@ class BINS(Serial):
 			self.end = False
 
 			self.state.update(self.list_packets(20))
+			self.ask_packet(0x70,100)
+			self.ask_packet(0x33,100)
+			self.ask_packet(0x8E,  1)
+			self.ask_packet(0x35,100)
+			self.ask_packet(0xDE,100)
 
 			self.reader = Thread(target = self.read_packets)
 			self.reader.start()
+			while D70['state'] == 0:
+				sleep(0.1)
+			self.state.update(D70)
+
 		except Exception as e:
 			raise e
 
 if __name__ == "__main__":
 	bins = BINS()
 	print(bins.state)
-	x = configuration.packets_out['p40h']
-	x['Type'][3] = 1
-	x['PkID'][3] = 1
-	x['Freq'][3] = 1
-	print(bins.make_packet(x))
-	for x in range(2):
-		sleep(10)
+	for x in range(10):
+		sleep(5)
 		print(D70)
-		print(D33)
-		print(D35)
+		print(D72)
 	print(bins.stop())
