@@ -3,7 +3,7 @@ from struct import pack, unpack
 from time import sleep
 
 class KUP(object):
-	name = 'BUP'
+	NAME = 'BUP'
 	
 	cmd_measure = b'\xae\xae\xbb\x00\x04\x07\x00' # Измерение
 										          # I_48 ток 48 в

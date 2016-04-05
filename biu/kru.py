@@ -3,7 +3,7 @@ from struct import pack, unpack
 from time import sleep
 
 class KRU(object):
-	name = 'KRU'
+	NAME = 'KRU'
 
 	BOTH = 2
 	LEFT = 0

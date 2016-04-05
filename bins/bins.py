@@ -7,7 +7,6 @@ from struct import pack, unpack
 from serial import Serial, SerialException
 from threading import Thread
 from time import sleep
-from crc import compute_crc
 
 
 try:
@@ -43,13 +42,19 @@ DDE = dict(
 )
 
 class BINS(Serial):
-	name = 'BINS'
+	NAME = 'BINS'
 
 	MAX_ERROR_COUNT = 100
 
 	state = dict(
 		errorcount = 0,
 	)
+
+	def get_state(self):
+		print 
+		self.state.update(D70)
+		self.state.pop('signature')
+		return self.state
 
 	def read_synchro(self):
 		if self.read() == configuration.SYNCHRO:
@@ -66,12 +71,14 @@ class BINS(Serial):
 		x['PkID'][3] = packet_id 
 		x['Freq'][3] = packet_frequency // 10
 		x = self.send_packet(0x40,self.make_packet(x))
-		print(x)
+		return x
 
 
-
-	def get_my_port(self):
-		for p in configuration.PORTS:
+	def get_my_port(self, open_ports = []):
+		ports = configuration.PORTS
+		for port in open_ports:
+			ports.remove(port)
+		for p in ports:
 			try:
 				print('Trying port %s ... ' % p, end = '', file = sys.stderr)
 				s = Serial(port = p, baudrate = configuration.BAUDRATE, timeout = 0.5)
@@ -205,10 +212,10 @@ class BINS(Serial):
 		self.reader.join()
 
 
-	def __init__(self):
+	def __init__(self, open_ports = []):
 		try:
 			super().__init__(
-				port     = self.get_my_port(),
+				port     = self.get_my_port(open_ports),
 				timeout  = configuration.TIMEOUT,
 				baudrate = configuration.BAUDRATE,
 				parity   = configuration.PARITY,

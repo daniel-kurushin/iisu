@@ -3,7 +3,7 @@ from struct import pack, unpack
 from time import sleep
 
 class KHC(object):
-	name = 'KHC'
+	NAME = 'KHC'
 
 	cmd_inc_engine    = b'\xae\xae\x01\x00\x01\x08\x00' # увеличить обороты и подтвердить результат
 	cmd_dec_engine    = b'\xae\xae\x01\x00\x02\x08\x00' # уменьшить обороты и подтвердить результат

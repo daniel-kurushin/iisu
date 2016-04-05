@@ -14,9 +14,9 @@ from cv.cv import CV
 from bins.bins import BINS
 
 class BIURequestHandler(BaseHTTPRequestHandler):
-	biu = BIU()
-	bup = BUP()
-
+	exclude_ports = []
+	biu = BIU(exclude_ports) ; exclude_ports += [biu.port]
+	bup = BUP(exclude_ports) ; exclude_ports += [bup.port]
 	try:
 		assert biu.state['kru']['present'] == True
 	except Exception as e:
@@ -48,7 +48,7 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 		print(type(e), e, file=sys.stderr)
 		exit(1)
 
-	bins = BINS()
+	bins = BINS(exclude_ports)
 	try:
 		assert bins.state['0x70']['present'] == True
 		assert bins.state['0x33']['present'] == True
@@ -66,8 +66,8 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 
 	def get_state(self):
 		_ = {}
-		for x in [self.kru, self.khc, self.kup, self.cv]:
-			_.update({x.name:x.get_state()})
+		for x in [self.kru, self.khc, self.kup, self.cv, self.bins]:
+			_.update({x.NAME:x.get_state()})
 		return _
 	
 	def get_distances(self):
@@ -143,7 +143,7 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 		self.send_response(200)
 		self.send_header('Content-type', 'application/json')
 		self.end_headers()
-		self.wfile.write(str.encode(json.dumps(data)))
+		self.wfile.write(str.encode(json.dumps(data, indent = 4)))
 
 	def do_POST(self):
 		print(self.path, file = sys.stderr)

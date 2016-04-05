@@ -2,7 +2,7 @@ from urllib.request import urlopen
 from json import loads, dumps
 
 class CV():
-	name             = 'CV'
+	NAME             = 'CV'
 	
 	cmd_state 		 = '/state'
 	cmd_describe 	 = '/describe'

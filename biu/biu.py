@@ -8,7 +8,10 @@ except ImportError:
 
 class BIU(Serial):
 	state = dict()
-	def get_my_port(self):
+	def get_my_port(self, open_ports = []):
+		ports = configuration.PORTS
+		for port in open_ports:
+			ports.remove(port)
 		for p in configuration.PORTS:
 			try:
 				print('Trying port %s ...' % p, end = '', file = sys.stderr)
@@ -38,10 +41,10 @@ class BIU(Serial):
 				print(e, file = sys.stderr)
 		return None
 
-	def __init__(self):
+	def __init__(self, open_ports = []):
 		try:
 			super().__init__(
-				port     = self.get_my_port(),
+				port     = self.get_my_port(open_ports),
 				timeout  = configuration.TIMEOUT,
 				baudrate = configuration.BAUDRATE,
 			)
