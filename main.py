@@ -13,7 +13,11 @@ from bup.kup import KUP
 from cv.cv import CV 
 from bins.bins import BINS
 
-class BIURequestHandler(BaseHTTPRequestHandler):
+class IISURequestHandler(BaseHTTPRequestHandler):
+	err404 = dict(
+		error = 'wrong path',
+		code = 404,
+	)
 	exclude_ports = []
 	biu = BIU(exclude_ports) ; exclude_ports += [biu.port]
 	bup = BUP(exclude_ports) ; exclude_ports += [bup.port]
@@ -81,8 +85,10 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 
 	def do_steer(self, data):
 		print(data, file = sys.stderr)
-		x = int(data['pos'][0])
-		return self.kru.steer(pos = x)
+		x = int(data['req_str_pos'][0])
+		y = self.get_steerpos()['pos']
+		if abs(x-y) > 1: return self.kru.steer(pos = x)
+		else: return self.kru.steer(pos = y)
 
 	def do_flick(self, data):
 		print(data, file = sys.stderr)
@@ -92,6 +98,7 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 
 	def do_gooo(self, data):
 		print(data, file = sys.stderr)
+		self.do_power_48v('on')
 		req_acc_pos = int(data['req_acc_pos'][0])
 		rgt_brk = int(data['rgt_brk'][0])
 		lgt_brk = int(data['lgt_brk'][0])
@@ -112,12 +119,33 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 	def do_stop_flick(self):
 		return self.kru.stop_flick()
 
-	def do_restart(self):
+	def do_kru_restart(self):
 		return self.kru.restart()
 
 	def do_stop_engine(self):
+		self.do_power_48v('off')
+		self.khc.brakes(rgt = 0,lgt = 0,frw = 1)
 		return self.khc.stop_engine()
 
+	def get_power(self, ):
+		return self.kup.measure()
+
+	def do_power_48v(self, pon = 'on'):
+		if pon == 'off':
+			return self.kup.do48v_off()
+		else:
+			return self.kup.do48v_on()
+
+	def set_acc_steer(self, data):
+		print(data, file = sys.stderr)
+		_ = {}
+		_.update(self.do_steer(data))
+		_.update(self.do_gooo(data))
+		return _
+		y = self.get_steerpos()
+
+	def do_scan(self):
+		return self.cv.do_scan(-1,1)
 	
 	def load_file(self, name, context=None, content_type='text/html'):
 		self.send_response(200)
@@ -145,6 +173,60 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(str.encode(json.dumps(data, indent = 4)))
 
+	def process_move_urls(self, data):
+		if self.path.startswith('/move/set_acc_steer'):
+			self.to_json(self.set_acc_steer(data))
+		elif self.path.startswith('/move/set_acc_course'):
+			pass
+		else:
+			self.to_json(self.err404)
+
+	def process_steer_urls(self, data = None):
+		if self.path.startswith('/steer/set_pos'):
+			self.to_json(self.do_steer(data))
+		elif self.path.startswith('/steer/get_pos'):
+			self.to_json(self.get_steerpos())
+		elif self.path.startswith('/steer/stop_flick'):
+			self.to_json(self.do_stop_flick())
+		elif self.path.startswith('/steer/restart'):
+			self.to_json(self.do_kru_restart())
+		elif self.path.startswith('/steer/flick'):
+			self.to_json(self.do_flick(data))
+		else:
+			self.to_json(self.err404) 
+
+	def process_engine_urls(self, data = None):
+		if self.path.startswith('/engine/stop'):
+			self.to_json(self.do_stop_engine())
+		elif self.path.startswith('/engine/gooo'):
+			self.to_json(self.do_gooo(data))
+		elif self.path.startswith('/engine/reverse'):
+			self.to_json(self.do_reverse(data))
+		elif self.path.startswith('/engine/brakes'):
+			self.to_json(self.do_brakes(data))
+		else:
+			self.to_json(self.err404)
+
+	def process_state_urls(self, data = None):
+		if self.path == '/state':
+			self.to_json(self.get_state())
+		elif self.path.startswith('/state/encoders'):
+			self.to_json(self.get_encoders())
+		elif self.path.startswith('/state/distances'):
+			self.to_json(self.get_distances())
+		else:
+			self.to_json(self.err404)
+
+	def process_power_urls(self, data = None):
+		if self.path.startswith('/power/measure'):
+			self.to_json(self.get_power())
+		elif self.path.startswith('/power/48v/off'):
+			self.to_json(self.do_power_48v('off'))
+		elif self.path.startswith('/power/48v/on'):
+			self.to_json(self.do_power_48v('on'))
+		else:
+			self.to_json(self.err404)
+
 	def do_POST(self):
 		print(self.path, file = sys.stderr)
 		data = urllib.parse.parse_qs(
@@ -153,17 +235,15 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 			).decode('utf-8')
 		)
 		if self.path.startswith('/steer'):
-			self.to_json(self.do_steer(data))
-		elif self.path.startswith('/flick'):
-			self.to_json(self.do_flick(data))
-		elif self.path.startswith('/gooo'):
-			self.to_json(self.do_gooo(data))
-		elif self.path.startswith('/reverse'):
-			self.to_json(self.do_reverse(data))
-		elif self.path.startswith('/brakes'):
-			self.to_json(self.do_brakes(data))
+			self.process_steer_urls(data)
+		elif self.path.startswith('/engine'):
+			self.process_engine_urls(data)
+		elif self.path.startswith('/power'):
+			self.process_power_urls(data)
+		elif self.path.startswith('/move'):
+			self.process_move_urls(data)
 		else:
-			self.load_str('wrong path')
+			self.to_json(self.err404)
 
 	def do_GET(self):
 		print(self.path, file = sys.stderr)
@@ -178,20 +258,18 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 			elif self.path.endswith('css'):
 				content_type = 'text/css'
 			self.load_file(self.path.lstrip('/'), content_type=content_type)
+		elif self.path.startswith('/steer'):
+			self.process_steer_urls()
+		elif self.path.startswith('/engine'):
+			self.process_engine_urls()
 		elif self.path.startswith('/state'):
-			self.to_json(self.get_state())
-		elif self.path.startswith('/encoders'):
-			self.to_json(self.get_encoders())
-		elif self.path.startswith('/distances'):
-			self.to_json(self.get_distances())
-		elif self.path.startswith('/steerpos'):
-			self.to_json(self.get_steerpos())
-		elif self.path.startswith('/stop_flick'):
-			self.to_json(self.do_stop_flick())
-		elif self.path.startswith('/kru_restart'):
-			self.to_json(self.do_restart())
-		elif self.path.startswith('/stop_engine'):
-			self.to_json(self.do_stop_engine())
+			self.process_state_urls()
+		elif self.path.startswith('/power'):
+			self.process_power_urls()
+		elif self.path.startswith('/move'):
+			self.process_move_urls()
+		elif self.path.startswith('/scan'):
+			self.to_json(self.do_scan())
 		elif self.path == "/exit":
 			self.load_str('')
 			global need_to_exit
@@ -203,7 +281,7 @@ class BIURequestHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-	server = HTTPServer(('0.0.0.0', 8000), BIURequestHandler)
+	server = HTTPServer(('0.0.0.0', 8000), IISURequestHandler)
 	try:
 		server.serve_forever()
 	except:

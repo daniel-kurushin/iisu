@@ -27,10 +27,10 @@ class KHC(object):
 	def parse_distances(self, x):
 		return dict(
 			ok = True,
-			front = int(unpack('<b', x[5:6])[0]),  # / 128.0 / 58.0 / 100.0
-			left  = int(unpack('<b', x[3:4])[0]),  # / 128.0 / 58.0 / 100.0
-			right = int(unpack('<b', x[4:5])[0]),  # / 128.0 / 58.0 / 100.0
-			rear  = int(unpack('<b', x[6:7])[0]),  # / 128.0 / 58.0 / 100.0
+			front = int(unpack('<B', x[5:6])[0]) * 128.0 / 58.0 / 100.0,
+			left  = int(unpack('<B', x[3:4])[0]) * 128.0 / 58.0 / 100.0,
+			right = int(unpack('<B', x[4:5])[0]) * 128.0 / 58.0 / 100.0,
+			rear  = int(unpack('<B', x[6:7])[0]) * 128.0 / 58.0 / 100.0,
 		)
 	
 	def parse_engine(self, x):
@@ -187,8 +187,8 @@ if __name__ == "__main__":
 	from biu import BIU
 	khc = KHC(BIU())
 	print(khc.get_distances())
-	print(khc.gooo(31))
-	sleep(6)
-	print(khc.gooo(-31))
-	sleep(6)
+	# print(khc.gooo(31))
+	# sleep(6)
+	# print(khc.gooo(-31))
+	# sleep(6)
 	print(khc.stop_engine())
