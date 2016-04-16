@@ -33,6 +33,10 @@ D72 = dict(
 	signature = (b'\x33', b'\x72'),
 )
 
+D85 = dict(
+	signature = (b'\xa3', b'\x85'),
+)
+
 D8E = dict(
 	signature = (b'\x0b', b'\x8e'),
 )
@@ -113,7 +117,7 @@ class BINS(Serial):
 			raise Exception() #!!!!!
 		
 		to_send = \
-			pack('>b', packet_id) + \
+			pack('>B', packet_id) + \
 			b''.join(data)
 
 		crc = compute_crc(to_send)
@@ -185,22 +189,21 @@ class BINS(Serial):
 		while not self.end and \
 			self.state['errorcount'] < self.MAX_ERROR_COUNT:
 
-			T0 = datetime.datetime.now()
 
 			if self.read_synchro():
 				pln, sig = self.read_signature()
 				if (pln, sig) == D70['signature']: 
 					D70.update(self.parse_packet(0x70,self.read(ord(pln))))
-				if (pln, sig) == D72['signature']: 
+				elif (pln, sig) == D72['signature']: 
 					D72.update(self.parse_packet(0x72,self.read(ord(pln))))
 				elif (pln, sig) == D33['signature']: 
 					D33.update(self.parse_packet(0x33,self.read(ord(pln))))
 				elif (pln, sig) == D35['signature']: 
 					D35.update(self.parse_packet(0x35,self.read(ord(pln))))
 				elif (pln, sig) == D8E['signature']: 
-					D35.update(self.parse_packet(0x8E,self.read(ord(pln))))
-				elif (pln, sig) == DDE['signature']: 
-					D35.update(self.parse_packet(0xDE,self.read(ord(pln))))
+					D8E.update(self.parse_packet(0x8E,self.read(ord(pln))))
+				elif (pln, sig) == D85['signature']: 
+					D85.update(self.parse_packet(0x85,self.read(ord(pln))))
 				elif sig == 0:
 					self.state
 
@@ -226,12 +229,10 @@ class BINS(Serial):
 			self.end = False
 
 			self.state.update(self.list_packets(20))
-			self.ask_packet(0x70,100)
 			self.ask_packet(0x33,100)
-			self.ask_packet(0x8E,  1)
-			self.ask_packet(0x35,100)
-			self.ask_packet(0xDE,100)
-
+			self.ask_packet(0x85,100)
+			self.ask_packet(0x70,100)
+			print(self.list_packets(20))
 			self.reader = Thread(target = self.read_packets)
 			self.reader.start()
 			while D70['state'] == 0:
@@ -243,9 +244,40 @@ class BINS(Serial):
 
 if __name__ == "__main__":
 	bins = BINS()
-	print(bins.state)
-	for x in range(10):
-		sleep(5)
-		print(D70)
-		print(D72)
-	print(bins.stop())
+	while 1:
+		try:
+			sleep(1)
+			print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
+		except:
+			break
+	bins.stop()
+
+
+
+	# x = configuration.packets_out[0x76]
+	# x['rot_A'][3] = -90.000
+	# x['rot_B'][3] = 0 #  10.823
+	# x['rot_C'][3] = 0 #-178.980
+	# y = bins.make_packet(x)
+	# z = bins.send_packet(0x76,y)
+	# sleep(1)
+	# print(D85['K13'],D85['K14'],D85['K15'])
+	# print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
+
+	# x = configuration.packets_out[0x76]
+	# x['rot_A'][3] = -90
+	# x['rot_C'][3] = -10.823
+	# x['rot_B'][3] = 0 #-178.980
+	# y = bins.make_packet(x)
+	# z = bins.send_packet(0x76,y)
+	# sleep(1)
+	# print(D85['K13'],D85['K14'],D85['K15'])
+	# print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
+
+	# x = configuration.packets_out[0x76]
+	# x['rot_A'][3] = -90
+	# x['rot_C'][3] = -10.823
+	# x['rot_B'][3] = -179
+	# y = bins.make_packet(x)
+	# z = bins.send_packet(0x76,y)
+	# sleep(1)

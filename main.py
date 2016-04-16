@@ -80,13 +80,10 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 	def get_encoders(self):
 		return None
 
-	def get_steerpos(self):
-		return self.kru.get_pos()
-
 	def do_steer(self, data):
 		print(data, file = sys.stderr)
 		x = int(data['req_str_pos'][0])
-		y = self.get_steerpos()['pos']
+		y = self.kru.get_pos()['pos']
 		if abs(x-y) > 1: return self.kru.steer(pos = x)
 		else: return self.kru.steer(pos = y)
 
@@ -185,7 +182,7 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		if self.path.startswith('/steer/set_pos'):
 			self.to_json(self.do_steer(data))
 		elif self.path.startswith('/steer/get_pos'):
-			self.to_json(self.get_steerpos())
+			self.to_json(self.kru.get_pos())
 		elif self.path.startswith('/steer/stop_flick'):
 			self.to_json(self.do_stop_flick())
 		elif self.path.startswith('/steer/restart'):
@@ -204,6 +201,11 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.to_json(self.do_reverse(data))
 		elif self.path.startswith('/engine/brakes'):
 			self.to_json(self.do_brakes(data))
+		elif self.path.startswith('/engine/get_pos'):
+			_ = self.khc.get_state()
+			if _['is_reverse']: k = -1 
+			else: k = 1
+			self.to_json(dict(ok=_['ok'],currentAccelPos=k*_['currentAccelPos']))
 		else:
 			self.to_json(self.err404)
 
@@ -226,6 +228,10 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.to_json(self.do_power_48v('on'))
 		else:
 			self.to_json(self.err404)
+
+	def process_bins_urls(self):
+		if self.path.startswith('/orientation/get'):
+			self.to_json(self.bins.get_state())
 
 	def do_POST(self):
 		print(self.path, file = sys.stderr)
@@ -268,6 +274,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.process_power_urls()
 		elif self.path.startswith('/move'):
 			self.process_move_urls()
+		elif self.path.startswith('/orientation'):
+			self.process_bins_urls()
 		elif self.path.startswith('/scan'):
 			self.to_json(self.do_scan())
 		elif self.path == "/exit":

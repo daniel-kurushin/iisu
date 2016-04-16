@@ -66,18 +66,18 @@ class CV():
 		return x
 
 	def do_recognize(self):
-		return self.__post_json_url_to_dict(cv.cmd_recognize, cv.prm_recognize, (1,-1,1,-1))
+		return self.__post_json_url_to_dict(self.cmd_recognize, self.prm_recognize, (1,-1,1,-1))
 
 	def do_find(self):
 		x = {}
 		return x
 
 	def do_scan(self, a_min, a_max):
-		x = self.__post_json_url_to_dict(cv.cmd_scan, cv.prm_scan, (a_min, a_max))
+		x = self.__post_json_url_to_dict(self.cmd_scan, self.prm_scan, (a_min, a_max))
 		return x
 
 	def do_rotate(self, a, b):
-		x = self.__post_json_url_to_dict(cv.cmd_rotate, cv.prm_rotate, (a, b))
+		x = self.__post_json_url_to_dict(self.cmd_rotate, self.prm_rotate, (a, b))
 		return x
 
 	def do_range(self):
