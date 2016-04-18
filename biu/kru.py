@@ -13,6 +13,8 @@ class KRU(object):
 	OOO_OOO_ = 1
 	O___O___ = 2
 
+	IS_FLK_ON = 0
+
 	cmd_steer      = b'\xae\xae\x02\x00\x01\x08\x00' # повернуть в поз хх
 	cmd_get_pos    = b'\xae\xae\x02\x00\x02\x07\x00' # вернуть текущее положение
 	cmd_flick      = b'\xae\xae\x02\x00\x03\x09\x00' # включить указатели поворота
@@ -45,6 +47,7 @@ class KRU(object):
 			flickerState = unpack('<b', x[4:5])[0],
 			flk_onTime = unpack('<b', x[5:6])[0],
 			flk_offTime = unpack('<b', x[6:7])[0],
+			flk_on = self.IS_FLK_ON,
 		)
 
 	def parse_steer_res(self, x):
@@ -59,7 +62,7 @@ class KRU(object):
 			pos = unpack('<b', x[3:4])[0],
 		)
 
-	def parse_restart(self, x):
+	def parse_state(self, x):
 		return dict(
 			ok = True,
 			currentRudderPos = unpack('<b', x[3:4])[0],
@@ -108,6 +111,7 @@ class KRU(object):
 		ret = self.port.read(7)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 7
+		self.IS_FLK_ON = 1
 		return self.parse_flickers_state(ret)
 
 	def stop_flick(self):
@@ -117,6 +121,7 @@ class KRU(object):
 		ret = self.port.read(7)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 7
+		self.IS_FLK_ON = 0
 		return self.parse_flickers_state(ret)
 
 	def restart(self):
@@ -126,6 +131,7 @@ class KRU(object):
 		ret = self.port.read(4)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 4
+		self.IS_FLK_ON = 0
 		return self.get_state()
 
 	def get_state(self):
@@ -135,7 +141,7 @@ class KRU(object):
 		ret = self.port.read(15)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 15
-		return self.parse_restart(ret)
+		return self.parse_state(ret)
 
 	def __init__(self, port = None):
 		if port != None:

@@ -178,17 +178,45 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		else:
 			self.to_json(self.err404)
 
+	def process_flick_urls(self, data = None):
+		if self.path.startswith('/flick/stop'):
+			_ = self.do_stop_flick()
+		elif self.path.startswith('/flick/left'):
+			self.do_stop_flick()
+			_ = self.do_flick(dict(side = [0], mode = [0]))
+		elif self.path.startswith('/flick/right'):
+			self.do_stop_flick()
+			_ = self.do_flick(dict(side = [1], mode = [0]))
+		elif self.path.startswith('/flick/both'):
+			self.do_stop_flick()
+			_ = self.do_flick(dict(side = [2], mode = [0]))
+		elif self.path.startswith('/flick/state'):
+			_ = self.kru.get_state()
+		else:
+			self.to_json(self.err404) 
+
+		try:
+			res = dict(
+				flickersMode = _['flickerState'] != 0,
+			)
+			if _['flickersMode'] == 0:
+				res.update({'flickersSide': 'left'})
+			elif _['flickersMode'] == 1:
+				res.update({'flickersSide': 'right'})
+			elif _['flickersMode'] == 2:
+				res.update({'flickersSide': 'both'})
+		except KeyError:
+			res = {'ok':False}
+			
+		self.to_json(res)
+
 	def process_steer_urls(self, data = None):
 		if self.path.startswith('/steer/set_pos'):
 			self.to_json(self.do_steer(data))
 		elif self.path.startswith('/steer/get_pos'):
 			self.to_json(self.kru.get_pos())
-		elif self.path.startswith('/steer/stop_flick'):
-			self.to_json(self.do_stop_flick())
 		elif self.path.startswith('/steer/restart'):
 			self.to_json(self.do_kru_restart())
-		elif self.path.startswith('/steer/flick'):
-			self.to_json(self.do_flick(data))
 		else:
 			self.to_json(self.err404) 
 
@@ -274,6 +302,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.process_power_urls()
 		elif self.path.startswith('/move'):
 			self.process_move_urls()
+		elif self.path.startswith('/flick'):
+			self.process_flick_urls()
 		elif self.path.startswith('/orientation'):
 			self.process_bins_urls()
 		elif self.path.startswith('/scan'):
