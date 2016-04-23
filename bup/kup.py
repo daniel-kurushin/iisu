@@ -1,10 +1,14 @@
 import sys
 from struct import pack, unpack
 from time import sleep
+from threading import Thread
+from time import sleep
 
 class KUP(object):
-	NAME = 'BUP'
-	
+	NAME  = 'BUP'
+	state = {}
+	_lock  = False
+
 	cmd_measure = b'\xae\xae\xbb\x00\x04\x07\x00' # Измерение
 										          # I_48 ток 48 в
 										          # I_12 ток 12 в
@@ -26,6 +30,15 @@ class KUP(object):
 										          # PIN_power_12
 										          # PIN_power_48
 
+	def __lock(self):
+		self._lock = True
+
+	def __unlock(self):
+		self._lock = False
+
+	def __isLock(self):
+		return self._lock
+
 	def parse_measure(self, x):
 		return dict(
 			ok = True,
@@ -44,33 +57,43 @@ class KUP(object):
 
 
 	def measure(self):
+		while self.__isLock():
+			sleep(.1)
+		self.__lock()
 		cmd = self.cmd_measure
 		print('>>>', cmd, file = sys.stderr)
 		self.port.write(cmd)
 		ret = self.port.read(100)
+		self.__unlock()
 		print('<<<', ret, len(ret), file = sys.stderr)
 		assert len(ret) == 10
 		return self.parse_measure(ret)
 
 	def get_state(self):
-		_ = self.do12v_on()
-		_.update(self.measure())
-		return _
+		return self.state
 
 	def do12v_on(self):
+		while self.__isLock():
+			sleep(.1)
+		self.__lock()
 		cmd = self.cmd_12v_on
 		print('>>>', cmd, file = sys.stderr)
 		self.port.write(cmd)
 		ret = self.port.read(10)
+		self.__unlock()
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 10
 		return self.parse_state(ret)
 
 	def do12v_off(self):
+		while self.__isLock():
+			sleep(.1)
+		self.__lock()
 		cmd = self.cmd_12v_off
 		print('>>>', cmd, file = sys.stderr)
 		self.port.write(cmd)
 		ret = self.port.read(10)
+		self.__unlock()
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 10
 		return self.parse_state(ret) # Никогда ничего не вернет, если нет 
@@ -78,37 +101,62 @@ class KUP(object):
 		                             # компьютер будет отключен!
 
 	def do48v_on(self):
+		while self.__isLock():
+			sleep(.1)
+		self.__lock()
 		cmd = self.cmd_48v_on
 		print('>>>', cmd, file = sys.stderr)
 		self.port.write(cmd)
 		ret = self.port.read(10)
+		self.__unlock()
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 10
 		return self.parse_state(ret)
 
 	def do48v_off(self):
+		while self.__isLock():
+			sleep(.1)
+		self.__lock()
 		cmd = self.cmd_48v_off
 		print('>>>', cmd, file = sys.stderr)
 		self.port.write(cmd)
 		ret = self.port.read(10)
+		self.__unlock()
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 10
 		return self.parse_state(ret)
 
+	def loop_measure(self):
+		self.end = False
+		print('BUP measures started', file = sys.stderr)
+		while not self.end:
+			if not self.__isLock():
+				self.state.update(self.do12v_on())
+				self.state.update(self.measure())
+			sleep(1)
+		print('BUP measures finished', file = sys.stderr)
+
+	def finish(self):
+		self.end = True
+		self.measurer.join()
+
 	def __init__(self, port = None):
 		if port != None:
 			self.port = port
+			self.measurer = Thread(target = self.loop_measure)
+			self.measurer.start()
 		else:
 			raise Exception('port is None')
 		
 if __name__ == "__main__":
 	from bup import BUP
 	kup = KUP(BUP())
-	print(kup.measure())
-	sleep(1)
+	print(kup.get_state())
+	sleep(10)
 	print(kup.do48v_off())
 	sleep(1)
-	print(kup.measure())
+	print(kup.get_state())
 	print(kup.do48v_on())
 	sleep(1)
-	print(kup.measure())
+	print(kup.get_state())
+	kup.finish()

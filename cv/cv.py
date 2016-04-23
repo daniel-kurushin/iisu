@@ -19,6 +19,20 @@ class CV():
 	prm_rotate 		 = 'a=%i&b=%i'
 	cmd_range 		 = '/range'
 	cmd_cloud 		 = '/cloud'
+	img_wide		 = 'http://192.168.0.115/jpg/1/image.jpg?resolution=640x480'
+
+	def __get_img_url_to_dict(self, imgurl):
+		try:
+			return dict(
+				img = urlopen(self.url_prefix + imgurl).read(),
+				ok = True,
+			)
+		except Exception as e:
+			return dict(
+				ok = False,
+				error = str(e),
+			)
+
 
 	def __get_json_url_to_dict(self, cmd):
 		try:
@@ -54,16 +68,22 @@ class CV():
 		return self.__get_json_url_to_dict(self.cmd_list_objects)
 
 	def get_left(self):
-		x = {}
-		return x
+		return self.__get_img_url_to_dict(self.__get_json_url_to_dict(self.cmd_left))
 
 	def get_right(self):
-		x = {}
-		return x
+		return self.__get_img_url_to_dict(self.__get_json_url_to_dict(self.cmd_right))
 
 	def get_wide(self):
-		x = {}
-		return x
+		try:
+			return dict(
+				img = urlopen(self.img_wide).read(),
+				ok = True,
+			)
+		except Exception as e:
+			return dict(
+				ok = False,
+				error = str(e),
+			)
 
 	def do_recognize(self):
 		return self.__post_json_url_to_dict(self.cmd_recognize, self.prm_recognize, (1,-1,1,-1))

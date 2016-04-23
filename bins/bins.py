@@ -232,7 +232,7 @@ class BINS(Serial):
 			self.ask_packet(0x33,100)
 			self.ask_packet(0x85,100)
 			self.ask_packet(0x70,100)
-			print(self.list_packets(20))
+			print(self.list_packets(20), file = sys.stderr)
 			self.reader = Thread(target = self.read_packets)
 			self.reader.start()
 			while D70['state'] == 0:

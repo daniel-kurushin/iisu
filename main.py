@@ -4,6 +4,7 @@ import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler, urllib
 from threading import Thread
 from time import sleep
+from datetime import datetime
 
 from biu.biu import BIU
 from biu.kru import KRU
@@ -12,6 +13,7 @@ from bup.bup import BUP
 from bup.kup import KUP
 from cv.cv import CV 
 from bins.bins import BINS
+from base64 import encodebytes
 
 class IISURequestHandler(BaseHTTPRequestHandler):
 	err404 = dict(
@@ -61,13 +63,6 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		bins.stop()
 		exit(1)
 
-
-	def to_port(self, data):
-		return None
-
-	def from_port(self):
-		return None
-
 	def get_state(self):
 		_ = {}
 		for x in [self.kru, self.khc, self.kup, self.cv, self.bins]:
@@ -95,8 +90,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 
 	def do_gooo(self, data):
 		print(data, file = sys.stderr)
-		self.do_power_48v('on')
 		req_acc_pos = int(data['req_acc_pos'][0])
+		if req_acc_pos != 0: self.do_power_48v('on')
 		rgt_brk = int(data['rgt_brk'][0])
 		lgt_brk = int(data['lgt_brk'][0])
 		return self.khc.gooo(req_acc_pos, rgt_brk, lgt_brk)
@@ -120,12 +115,13 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		return self.kru.restart()
 
 	def do_stop_engine(self):
-		self.do_power_48v('off')
+		x = self.khc.stop_engine()
 		self.khc.brakes(rgt = 0,lgt = 0,frw = 1)
-		return self.khc.stop_engine()
+		self.do_power_48v('off')
+		return x
 
 	def get_power(self, ):
-		return self.kup.measure()
+		return self.kup.get_state()
 
 	def do_power_48v(self, pon = 'on'):
 		if pon == 'off':
@@ -170,13 +166,19 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(str.encode(json.dumps(data, indent = 4)))
 
+	def to_jpeg(self,data):
+		self.send_response(200)
+		self.send_header('Content-type', 'image/jpeg')
+		self.end_headers()
+		self.wfile.write(data)
+
 	def process_move_urls(self, data):
 		if self.path.startswith('/move/set_acc_steer'):
 			self.to_json(self.set_acc_steer(data))
 		elif self.path.startswith('/move/set_acc_course'):
 			pass
 		else:
-			self.to_json(self.err404)
+			self.to_json(self.err404) 
 
 	def process_flick_urls(self, data = None):
 		if self.path.startswith('/flick/stop'):
@@ -193,7 +195,7 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		elif self.path.startswith('/flick/state'):
 			_ = self.kru.get_state()
 		else:
-			self.to_json(self.err404) 
+			_ = self.err404
 
 		try:
 			res = dict(
@@ -257,9 +259,29 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		else:
 			self.to_json(self.err404)
 
-	def process_bins_urls(self):
+	def process_bins_urls(self, data = None):
 		if self.path.startswith('/orientation/get'):
 			self.to_json(self.bins.get_state())
+
+	def process_view_urls(self, data = None):
+		if self.path.startswith('/view/left'):
+			_ = self.cv.get_left()
+			if _['ok']: self.to_jpeg(_['img'])
+		elif self.path.startswith('/view/right'):
+			_ = self.cv.get_right()
+			if _['ok']: self.to_jpeg(_['img'])
+		elif self.path.startswith('/view/360'):
+			_ = self.cv.get_wide()
+			if _['ok']: self.to_jpeg(_['img'])
+		elif self.path.startswith('/view/rotate'):
+			A,B=[int(a.strip(')')) for a in self.path.split('(')[1:]]
+			_ = self.cv.do_rotate(A,B)
+			print(_)
+			exit(1)
+			_.update(self.cv.get_left())
+			if _['ok']: self.to_jpeg(_['img'])
+		else:
+			self.to_json(self.err404)
 
 	def do_POST(self):
 		print(self.path, file = sys.stderr)
@@ -292,6 +314,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			elif self.path.endswith('css'):
 				content_type = 'text/css'
 			self.load_file(self.path.lstrip('/'), content_type=content_type)
+		elif self.path.startswith('/ping'):
+			self.to_json({'time':str(datetime.now())})
 		elif self.path.startswith('/steer'):
 			self.process_steer_urls()
 		elif self.path.startswith('/engine'):
@@ -306,6 +330,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.process_flick_urls()
 		elif self.path.startswith('/orientation'):
 			self.process_bins_urls()
+		elif self.path.startswith('/view'):
+			self.process_view_urls()
 		elif self.path.startswith('/scan'):
 			self.to_json(self.do_scan())
 		elif self.path == "/exit":
