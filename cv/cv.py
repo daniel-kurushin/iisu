@@ -3,7 +3,7 @@ from json import loads, dumps
 
 class CV():
 	NAME             = 'CV'
-	
+
 	cmd_state 		 = '/state'
 	cmd_describe 	 = '/describe'
 	cmd_list_objects = '/list_objects'
@@ -16,7 +16,7 @@ class CV():
 	cmd_scan 		 = '/scan'
 	prm_scan		 = "a_min=%i&a_max=%i"
 	cmd_rotate 		 = '/rotate'
-	prm_rotate 		 = 'a=%i&b=%i'
+	prm_rotate 		 = 'a=%i&b=%i&returnimage=0'
 	cmd_range 		 = '/range'
 	cmd_cloud 		 = '/cloud'
 	img_wide		 = 'http://192.168.0.115/jpg/1/image.jpg?resolution=640x480'
@@ -30,7 +30,7 @@ class CV():
 		except Exception as e:
 			return dict(
 				ok = False,
-				error = str(e),
+				error = "%s / %s / %s " % (str(e), '__get_img_url_to_dict', imgurl),
 			)
 
 
@@ -40,7 +40,7 @@ class CV():
 		except Exception as e:
 			return dict(
 				ok = False,
-				error = str(e),
+				error = "%s / %s / %s " % (str(e), '__get_json_url_to_dict', cmd),
 			)
 
 	def __post_json_url_to_dict(self, cmd, prm, vars = ()):
@@ -50,11 +50,17 @@ class CV():
 		except Exception as e:
 			return dict(
 				ok = False,
-				error = str(e),
+				error = "%s / %s / %s / %s" % (str(e), '__post_json_url_to_dict', cmd, prm),
 			)
+
+	def set_current_cam(self, current_cam = 'left'):
+		if current_cam in self.cam_list.keys():
+			self.current_cam = current_cam
+		return self.get_state()
 
 	def get_state(self):
 		x = self.__get_json_url_to_dict(self.cmd_state)
+		x.update({'current_cam': self.current_cam})
 		if x['state'] != 'NORMAL_OP': 
 			raise Exception('CV error ' + x['state'])
 		else: 
@@ -66,6 +72,12 @@ class CV():
 
 	def get_object_list(self):
 		return self.__get_json_url_to_dict(self.cmd_list_objects)
+
+	def picture(self):
+		try:
+			return self.cam_list[self.current_cam]()
+		except KeyError:
+			return self.get_left()
 
 	def get_left(self):
 		return self.__get_img_url_to_dict(self.__get_json_url_to_dict(self.cmd_left))
@@ -97,8 +109,12 @@ class CV():
 		return x
 
 	def do_rotate(self, a, b):
-		x = self.__post_json_url_to_dict(self.cmd_rotate, self.prm_rotate, (a, b))
-		return x
+		_ = {}
+		y = self.__post_json_url_to_dict(self.cmd_rotate, self.prm_rotate, (a, b))
+		print(y)
+		_.update()
+		_.update(self.__get_json_url_to_dict(self.cmd_state))
+		return _
 
 	def do_range(self):
 		x = {}
@@ -109,9 +125,17 @@ class CV():
 		return x
 
 
+	current_cam      = 'left'
+	cam_list		 = {
+		'left': get_left,
+		'right': get_right,
+		'wide': get_wide
+	}
+	
 	def __init__(self, url='http://192.168.0.198:8000'):
 		self.url_prefix = url
 		self.state = {}
+		self.state.update({'current_cam': self.current_cam})
 		for m in [self.get_state, self.get_description]:
 			self.state.update(m())
 

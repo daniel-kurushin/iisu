@@ -273,13 +273,15 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		elif self.path.startswith('/view/360'):
 			_ = self.cv.get_wide()
 			if _['ok']: self.to_jpeg(_['img'])
+		elif self.path.startswith('/view/picture'):
+			_ = self.cv.picture()
+			if _['ok']: self.to_jpeg(_['img'])
+		elif self.path.startswith('/view/set_current_cam'):
+			self.to_json(self.cv.set_current_cam(self.path.split('/')[-1]))
 		elif self.path.startswith('/view/rotate'):
 			A,B=[int(a.strip(')')) for a in self.path.split('(')[1:]]
 			_ = self.cv.do_rotate(A,B)
-			print(_)
-			exit(1)
-			_.update(self.cv.get_left())
-			if _['ok']: self.to_jpeg(_['img'])
+			self.to_json(_)
 		else:
 			self.to_json(self.err404)
 
