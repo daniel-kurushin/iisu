@@ -27,11 +27,11 @@ class KHC(object):
 	def parse_distances(self, x):
 		return dict(
 			ok = True,
+			rear  = int(unpack('<B', x[3:4])[0]) * 128.0 / 58.0 / 100.0,
+			left  = int(unpack('<B', x[4:5])[0]) * 128.0 / 58.0 / 100.0,
 			front = int(unpack('<B', x[5:6])[0]) * 128.0 / 58.0 / 100.0,
-			left  = int(unpack('<B', x[3:4])[0]) * 128.0 / 58.0 / 100.0,
-			right = int(unpack('<B', x[4:5])[0]) * 128.0 / 58.0 / 100.0,
-			rear  = int(unpack('<B', x[6:7])[0]) * 128.0 / 58.0 / 100.0,
-		)
+			right = int(unpack('<B', x[6:7])[0]) * 128.0 / 58.0 / 100.0,
+		)	
 	
 	def parse_engine(self, x):
 		return dict(

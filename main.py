@@ -13,6 +13,8 @@ from bup.bup import BUP
 from bup.kup import KUP
 from cv.cv import CV 
 from bins.bins import BINS
+from pos.pos import Position
+
 from base64 import encodebytes
 
 class IISURequestHandler(BaseHTTPRequestHandler):
@@ -62,6 +64,11 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		print(type(e), e, file=sys.stderr)
 		bins.stop()
 		exit(1)
+
+	try:
+		position = Position(bins = bins, cv = cv, rfind = khc)
+	except AssertionError:
+		print('No position data found', file=sys.stderr)
 
 	def get_state(self):
 		_ = {}
@@ -171,6 +178,15 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		self.send_header('Content-type', 'image/jpeg')
 		self.end_headers()
 		self.wfile.write(data)
+
+	def process_pos_urls(self,):
+		if self.path.startswith('/position/get'):
+			self.to_json(self.position.get())
+		elif self.path.startswith('/position/set'):
+			X,Y=[float(a.strip(')')) for a in self.path.split('(')[1:]]
+			_ = self.position.set(X,Y)
+			self.to_json(_)
+
 
 	def process_move_urls(self, data):
 		if self.path.startswith('/move/set_acc_steer'):
@@ -332,6 +348,8 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			self.process_flick_urls()
 		elif self.path.startswith('/orientation'):
 			self.process_bins_urls()
+		elif self.path.startswith('position'):
+			self.process_pos_urls()
 		elif self.path.startswith('/view'):
 			self.process_view_urls()
 		elif self.path.startswith('/scan'):
@@ -348,7 +366,4 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
 	server = HTTPServer(('0.0.0.0', 8000), IISURequestHandler)
-	try:
-		server.serve_forever()
-	except:
-		need_to_exit = True
+	server.serve_forever()
