@@ -72,7 +72,7 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 
 	def get_state(self):
 		_ = {}
-		for x in [self.kru, self.khc, self.kup, self.cv, self.bins]:
+		for x in [self.kru, self.khc, self.kup, self.cv, self.bins, self.position]:
 			_.update({x.NAME:x.get_state()})
 		return _
 	
@@ -277,7 +277,9 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 
 	def process_bins_urls(self, data = None):
 		if self.path.startswith('/orientation/get'):
-			self.to_json(self.bins.get_state())
+			_ = self.bins.get_state()
+			_.update(self.position.get_state())
+			self.to_json(_)
 
 	def process_view_urls(self, data = None):
 		if self.path.startswith('/view/left'):
