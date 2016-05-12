@@ -66,7 +66,7 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		exit(1)
 
 	try:
-		position = Position(bins = bins, cv = cv, rfind = khc)
+		position = Position(bins = bins, cv = cv, khc = khc, kru = kru)
 	except AssertionError:
 		print('No position data found', file=sys.stderr)
 
@@ -122,9 +122,14 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 		return self.kru.restart()
 
 	def do_stop_engine(self):
+		def set_zero_speed_th():
+			sleep(1)
+			self.bins.set_zero_speed()
+
 		x = self.khc.stop_engine()
 		self.khc.brakes(rgt = 0,lgt = 0,frw = 1)
 		self.do_power_48v('off')
+		Thread(target = set_zero_speed_th).start()
 		return x
 
 	def get_power(self, ):
@@ -280,6 +285,10 @@ class IISURequestHandler(BaseHTTPRequestHandler):
 			_ = self.bins.get_state()
 			_.update(self.position.get_state())
 			self.to_json(_)
+		elif self.path.startswith('/orientation/speed'):
+			self.to_json(self.bins.get_speed())
+		else:
+			self.to_json(self.err404)
 
 	def process_view_urls(self, data = None):
 		if self.path.startswith('/view/left'):

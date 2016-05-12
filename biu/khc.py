@@ -24,6 +24,8 @@ class KHC(object):
 														# enc_sec - срабатываний энкодера в сек
 														# enc_min - срабатываний энкодера в мин
 
+	currentAccelPos = 0											
+
 	def parse_distances(self, x):
 		return dict(
 			ok = True,
@@ -77,6 +79,7 @@ class KHC(object):
 		ret = self.port.read(4)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 4
+		self.currentAccelPos += 1
 		return self.parse_engine(ret)
 
 	def dec_engine(self):
@@ -88,6 +91,7 @@ class KHC(object):
 		ret = self.port.read(4)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 4
+		self.currentAccelPos -= 1
 		return self.parse_engine(ret)
 
 	def gooo(self, req_acc_pos = 31, rgt_brk = 0, lgt_brk = 0):
@@ -121,6 +125,7 @@ class KHC(object):
 		ret = self.port.read(4)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 4
+		self.currentAccelPos = 0
 		return self.parse_engine(ret)
 
 	def reverse(self, v = 1):
@@ -182,6 +187,8 @@ class KHC(object):
 			self.port = port
 		else:
 			raise Exception('port is None')
+
+		self.state = self.get_state()
 		
 if __name__ == "__main__":
 	from biu import BIU

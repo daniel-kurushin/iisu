@@ -55,10 +55,41 @@ class BINS(Serial):
 	)
 
 	def get_state(self):
-		print 
 		self.state.update(D70)
 		self.state.pop('signature')
 		return self.state
+
+	def get_orientation(self):
+		_ = {}
+		_.update(
+			dict(
+				C_bins = D70['C_bins'],
+				A_bins = D70['A_bins'],
+				B_bins = D70['B_bins']
+			)
+		)
+		return _
+
+	def get_xy(self):
+		_ = {}
+		_.update(
+			dict(
+				X_bins = D72['X_bins'],
+				Y_bins = D72['Y_bins'],
+			)
+		)
+		return _
+
+	def get_speed(self):
+		_ = {}
+		_.update(
+			dict(
+				V_e = D72['V_e'],
+				V_n = D72['V_n'],
+				V_h = D72['V_h']
+			)
+		)
+		return _
 
 	def read_synchro(self):
 		if self.read() == configuration.SYNCHRO:
@@ -111,6 +142,9 @@ class BINS(Serial):
 
 		return res
 
+	def set_zero_speed(self):
+		self.send_packet(0x4E,self.make_packet(configuration.packets_out[0x4E]))
+	
 	def send_packet(self, packet_id, data):
 		# return #!!!!!
 		if not 0 <= packet_id <= 255:
@@ -135,7 +169,7 @@ class BINS(Serial):
 		# aa aa 07 4d 00 00 00 00 12 30
 		# AA AA 07 4D 00 00 61 45 68 10
 		# aa aa 06 40 01 01 3f 80 00 00 f1 40 
-		print(''.join(["%02x " % x for x in to_send]), file = sys.stderr)
+		# print(''.join(["%02x " % x for x in to_send]), file = sys.stderr)
 		return self.write(to_send)
 
 
@@ -149,6 +183,22 @@ class BINS(Serial):
 			ordered[n] = pack(F, D * K)
 
 		return ordered
+
+	def write_packet(self, packet = {}):
+		try:
+			x = configuration.packets_out[packet['id']]
+			for k in x.keys():
+				try:
+					x[k][3] = packet[k]
+				except KeyError:
+					x[k][3] = 0
+				
+			y = self.make_packet(x)
+			z = self.send_packet(packet['id'],y)
+			return z
+		except KeyError:
+			return -1
+
 	
 	def parse_packet(self, packet_id, packet_bytes):
 		def parse_state(to_parse, dict_to_fill):
@@ -230,8 +280,8 @@ class BINS(Serial):
 
 			self.state.update(self.list_packets(20))
 			self.ask_packet(0x33,100)
-			self.ask_packet(0x85,100)
 			self.ask_packet(0x70,100)
+			self.ask_packet(0x72,100)
 			print(self.list_packets(20), file = sys.stderr)
 			self.reader = Thread(target = self.read_packets)
 			self.reader.start()
@@ -245,39 +295,37 @@ class BINS(Serial):
 if __name__ == "__main__":
 	bins = BINS()
 	while 1:
-		try:
-			sleep(1)
-			print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
-		except:
+		while 1:
+			try:
+				sleep(1)
+				_ = bins.get_orientation()
+				for i,j in [('A_bins', 'курс'),('B_bins', 'тангаж'),('C_bins', 'крен'),]:
+					print(j,round(_[i],4), end=' ')
+				print()
+			except KeyboardInterrupt:
+				break
+		# bins.stop()
+
+		ψ = float(input('  курс ψ = '))
+		if ψ == -1000:
 			break
+		ϑ = float(input('тангаж ϑ = '))
+		γ = float(input('  крен γ = '))
+
+		x = configuration.packets_out[0x76]
+		x['rot_A'][3] = ψ
+		x['rot_C'][3] = γ
+		x['rot_B'][3] = ϑ
+	# 'C_bins':	( 8,'<f',1), # крен
+	# 'A_bins':	( 9,'<f',1), # курс
+	# 'B_bins':	(10,'<f',1), # тангаж
+		y = bins.make_packet(x)
+		z = bins.send_packet(0x76,y)
+		sleep(1)
+
+
+	x = configuration.packets_out[0x54]
+	y = bins.make_packet(x)
+	z = bins.send_packet(0x54,y)
+
 	bins.stop()
-
-
-
-	# x = configuration.packets_out[0x76]
-	# x['rot_A'][3] = -90.000
-	# x['rot_B'][3] = 0 #  10.823
-	# x['rot_C'][3] = 0 #-178.980
-	# y = bins.make_packet(x)
-	# z = bins.send_packet(0x76,y)
-	# sleep(1)
-	# print(D85['K13'],D85['K14'],D85['K15'])
-	# print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
-
-	# x = configuration.packets_out[0x76]
-	# x['rot_A'][3] = -90
-	# x['rot_C'][3] = -10.823
-	# x['rot_B'][3] = 0 #-178.980
-	# y = bins.make_packet(x)
-	# z = bins.send_packet(0x76,y)
-	# sleep(1)
-	# print(D85['K13'],D85['K14'],D85['K15'])
-	# print(D70['A_bins'],D70['B_bins'],D70['C_bins'])
-
-	# x = configuration.packets_out[0x76]
-	# x['rot_A'][3] = -90
-	# x['rot_C'][3] = -10.823
-	# x['rot_B'][3] = -179
-	# y = bins.make_packet(x)
-	# z = bins.send_packet(0x76,y)
-	# sleep(1)

@@ -133,7 +133,7 @@ class KUP(object):
 			if not self.__isLock():
 				self.state.update(self.do12v_on())
 				self.state.update(self.measure())
-			sleep(1)
+			sleep(10)
 		print('BUP measures finished', file = sys.stderr)
 
 	def finish(self):

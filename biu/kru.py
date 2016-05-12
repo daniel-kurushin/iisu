@@ -14,6 +14,7 @@ class KRU(object):
 	O___O___ = 2
 
 	IS_FLK_ON = 0
+	currentRudderPos = 0
 
 	cmd_steer      = b'\xae\xae\x02\x00\x01\x08\x00' # повернуть в поз хх
 	cmd_get_pos    = b'\xae\xae\x02\x00\x02\x07\x00' # вернуть текущее положение
@@ -89,7 +90,9 @@ class KRU(object):
 		print('<<<', ret, file = sys.stderr)
 		sleep(.5)
 		assert len(ret) == 5
-		return self.parse_steer_res(ret)
+		_ = self.parse_steer_res(ret)
+		self.currentRudderPos = _['pos']
+		return _
 
 	def get_pos(self):
 		cmd = self.cmd_get_pos
@@ -98,7 +101,9 @@ class KRU(object):
 		ret = self.port.read(4)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 4
-		return self.parse_steer_pos(ret)
+		_ = self.parse_steer_pos(ret)
+		self.currentRudderPos = _['pos']
+		return _
 
 	def flick(self, side = BOTH, mode = OO__OO__):
 		cmd = self.cmd_flick
@@ -141,7 +146,8 @@ class KRU(object):
 		ret = self.port.read(15)
 		print('<<<', ret, file = sys.stderr)
 		assert len(ret) == 15
-		return self.parse_state(ret)
+		self.state = self.parse_state(ret)
+		return self.state
 
 	def __init__(self, port = None):
 		if port != None:

@@ -74,9 +74,13 @@ class CV():
 		return self.__get_json_url_to_dict(self.cmd_list_objects)
 
 	def picture(self):
-		try:
-			return self.cam_list[self.current_cam]()
-		except KeyError:
+		if self.current_cam == 'left':
+			return self.get_left()
+		elif self.current_cam == 'right':
+			return self.get_right()
+		elif self.current_cam == 'wide':
+			return self.get_wide()
+		else:
 			return self.get_left()
 
 	def get_left(self):
